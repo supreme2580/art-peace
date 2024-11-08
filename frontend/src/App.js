@@ -954,6 +954,7 @@ function App() {
                 isPortrait={isPortrait}
                 isMobile={isMobile}
                 overlayTemplate={overlayTemplate}
+                canvasRef={canvasRef}
               />
             )}
             {isFooterSplit && !footerExpanded && (
