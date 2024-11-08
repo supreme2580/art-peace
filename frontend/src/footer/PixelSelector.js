@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './PixelSelector.css';
 import '../utils/Styles.css';
 import EraserIcon from '../resources/icons/Eraser.png';
+import DefendStencil from '../ui/DefendStencil';
 
 const PixelSelector = (props) => {
   // Track when a placement is available
@@ -83,7 +84,10 @@ const PixelSelector = (props) => {
   };
 
   return (
-    <div className='PixelSelector'>
+    <div
+      className='PixelSelector'
+      style={{ display: 'flex', flexDirection: 'row', gap: '1.5rem' }}
+    >
       {(props.selectorMode || ended) && (
         <div className='PixelSelector__selector'>
           <div className='PixelSelector__selector__colors'>
@@ -191,6 +195,7 @@ const PixelSelector = (props) => {
           )}
         </div>
       )}
+      {props.overlayTemplate && <DefendStencil />}
     </div>
   );
 };

@@ -953,6 +953,7 @@ function App() {
                 setIsEraseMode={setIsEraserMode}
                 isPortrait={isPortrait}
                 isMobile={isMobile}
+                overlayTemplate={overlayTemplate}
               />
             )}
             {isFooterSplit && !footerExpanded && (
