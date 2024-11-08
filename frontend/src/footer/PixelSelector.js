@@ -200,8 +200,6 @@ const PixelSelector = (props) => {
           template={props.overlayTemplate}
           templateImage={props.templateImage}
           canvasRef={props.canvasRef}
-          width={props.width}
-          height={props.height}
           colorPixel={props.colorPixel}
           lastPlacedTime={props.lastPlacedTime}
           basePixelUp={props.availablePixels > props.availablePixelsUsed}

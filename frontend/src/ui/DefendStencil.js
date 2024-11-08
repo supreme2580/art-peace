@@ -5,8 +5,6 @@ export default function DefendStencil({
   template,
   templateImage,
   canvasRef,
-  width,
-  height,
   colorPixel,
   _lastPlacedTime,
   basePixelUp,
@@ -22,9 +20,9 @@ export default function DefendStencil({
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    // Ensure width and height are integers
-    const canvasWidth = Math.floor(width);
-    const canvasHeight = Math.floor(height);
+    // Get dimensions directly from canvas
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
 
     try {
       const imageData = context.getImageData(0, 0, canvasWidth, canvasHeight);
@@ -101,10 +99,15 @@ export default function DefendStencil({
     return () => clearInterval(interval);
   }, [isDefending, basePixelUp, canvasRef]);
 
+  // Disable the button if we don't have a valid canvas
+  const isDisabled = !canvasRef?.current;
+
   return (
     <button
       className='Button__primary Text__large'
       onClick={() => setIsDefending(!isDefending)}
+      disabled={isDisabled}
+      title={isDisabled ? 'Canvas not available' : ''}
     >
       {isDefending ? 'Stop Defending' : 'Defend'}
     </button>
