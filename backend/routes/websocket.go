@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/websocket"
 
@@ -15,14 +17,39 @@ func InitWebsocketRoutes() {
 
 func wsReader(conn *websocket.Conn) {
 	for {
-		// TODO: exit on close in backend?
-		// TODO: handle different message types
-		messageType, p, err := conn.ReadMessage()
+		_, p, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		fmt.Println("WS message received: ", messageType, string(p))
+
+		var message struct {
+			Event string `json:"event"`
+			Data  struct {
+				Channel string `json:"channel"`
+			} `json:"data"`
+		}
+
+		if err := json.Unmarshal(p, &message); err != nil {
+			fmt.Println("Error parsing message:", err)
+			continue
+		}
+
+		switch message.Event {
+		case "subscribe":
+			if strings.HasPrefix(message.Data.Channel, "world_") {
+				worldID := strings.TrimPrefix(message.Data.Channel, "world_")
+				core.ArtPeaceBackend.AddWorldSubscriber(worldID, conn)
+			} else {
+				core.ArtPeaceBackend.AddGeneralSubscriber(conn)
+			}
+
+		case "unsubscribe":
+			if strings.HasPrefix(message.Data.Channel, "world_") {
+				worldID := strings.TrimPrefix(message.Data.Channel, "world_")
+				core.ArtPeaceBackend.RemoveWorldSubscriber(worldID, conn)
+			}
+		}
 	}
 }
 

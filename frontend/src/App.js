@@ -249,14 +249,37 @@ function App() {
 
   useEffect(() => {
     if (readyState === ReadyState.OPEN) {
+      // Subscribe to general channel for global updates
       sendJsonMessage({
         event: 'subscribe',
         data: {
           channel: 'general'
         }
       });
+
+      // Subscribe to specific world channel if viewing a world
+      if (openedWorldId !== null) {
+        sendJsonMessage({
+          event: 'subscribe',
+          data: {
+            channel: `world_${openedWorldId}`
+          }
+        });
+      }
     }
-  }, [readyState]);
+
+    // Cleanup function to unsubscribe when switching worlds
+    return () => {
+      if (readyState === ReadyState.OPEN && openedWorldId !== null) {
+        sendJsonMessage({
+          event: 'unsubscribe',
+          data: {
+            channel: `world_${openedWorldId}`
+          }
+        });
+      }
+    };
+  }, [readyState, openedWorldId]);
 
   // Colors
   const staticColors = canvasConfig.colors;
@@ -292,36 +315,40 @@ function App() {
 
   useEffect(() => {
     const processMessage = async (message) => {
-      if (message) {
-        // Check the message type and handle accordingly
-        if (message.messageType === 'colorPixel') {
-          if (message.color >= colors.length) {
-            // Get new colors from backend
-            await fetchColors();
+      if (!message) return;
+
+      switch (message.messageType) {
+        case 'colorPixel':
+          // Handle main canvas pixel updates
+          if (openedWorldId === null) {
+            if (message.color >= colors.length) {
+              await fetchColors();
+            }
+            colorPixel(message.position, message.color);
           }
-          colorPixel(message.position, message.color);
-        } else if (message.messageType === 'colorWorldPixel') {
-          if (message.worldId.toString() !== openedWorldId) {
-            return;
+          break;
+
+        case 'colorWorldPixel':
+          // Handle world canvas pixel updates
+          if (message.worldId.toString() === openedWorldId?.toString()) {
+            if (message.color >= colors.length) {
+              await fetchColors();
+            }
+            colorPixel(message.position, message.color);
           }
-          if (message.color >= colors.length) {
-            // Get new colors from backend
-            await fetchColors();
-          }
-          colorPixel(message.position, message.color);
-        } else if (
-          message.messageType === 'nftMinted' &&
-          activeTab === 'NFTs'
-        ) {
-          if (message.minter === queryAddress) {
+          break;
+
+        case 'nftMinted':
+          // Handle NFT minting notifications
+          if (activeTab === 'NFTs' && message.minter === queryAddress) {
             setLatestMintedTokenId(message.token_id);
           }
-        }
+          break;
       }
     };
 
     processMessage(lastJsonMessage);
-  }, [lastJsonMessage]);
+  }, [lastJsonMessage, openedWorldId, colors, activeTab, queryAddress]);
 
   // Canvas
   const [width, setWidth] = useState(canvasConfig.canvas.width);
