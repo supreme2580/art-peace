@@ -90,9 +90,7 @@ func processNFTMintedEvent(event IndexerEvent) {
 
 	// Load image from redis
 	ctx := context.Background()
-	roundNumber := core.ArtPeaceBackend.CanvasConfig.Round
-	canvasKey := fmt.Sprintf("canvas-%s", roundNumber)
-	canvas, err := core.ArtPeaceBackend.Databases.Redis.Get(ctx, canvasKey).Result()
+	canvas, err := core.ArtPeaceBackend.Databases.Redis.Get(ctx, "canvas").Result()
 	if err != nil {
 		PrintIndexerError("processNFTMintedEvent", "Error getting canvas from redis", tokenIdLowHex, tokenIdHighHex, positionHex, widthHex, heightHex, nameHex, imageHashHex, blockNumberHex, minter)
 		return
@@ -164,6 +162,7 @@ func processNFTMintedEvent(event IndexerEvent) {
 	}
 
 	// TODO: Check if file exists
+	roundNumber := os.Getenv("ROUND_NUMBER")
 	if roundNumber == "" {
 		PrintIndexerError("processNFTMintedEvent", "Error getting round number from environment", tokenIdLowHex, positionHex, widthHex, heightHex, nameHex, imageHashHex, blockNumberHex, minter)
 		return
@@ -251,7 +250,7 @@ func processNFTMintedEvent(event IndexerEvent) {
 		return
 	}
 
-	message := map[string]string{
+	message := map[string]string {
 		"token_id":    strconv.FormatUint(tokenId, 10),
 		"minter":      minter,
 		"messageType": "nftMinted",

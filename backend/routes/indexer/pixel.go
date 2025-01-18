@@ -2,7 +2,6 @@ package indexer
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/keep-starknet-strange/art-peace/backend/core"
@@ -47,9 +46,7 @@ func processPixelPlacedEvent(event IndexerEvent) {
 	pos := uint(position) * core.ArtPeaceBackend.CanvasConfig.ColorsBitWidth
 
 	ctx := context.Background()
-	roundNumber := core.ArtPeaceBackend.CanvasConfig.Round
-	canvasKey := fmt.Sprintf("canvas-%s", roundNumber)
-	err = core.ArtPeaceBackend.Databases.Redis.BitField(ctx, canvasKey, "SET", bitfieldType, pos, color).Err()
+	err = core.ArtPeaceBackend.Databases.Redis.BitField(ctx, "canvas", "SET", bitfieldType, pos, color).Err()
 	if err != nil {
 		PrintIndexerError("processPixelPlacedEvent", "Error setting pixel in redis", address, posHex, dayIdxHex, colorHex)
 		return
@@ -64,7 +61,7 @@ func processPixelPlacedEvent(event IndexerEvent) {
 	}
 
 	// Send message to all connected clients
-	var message = map[string]string{
+	var message = map[string]string {
 		"position":    strconv.FormatInt(position, 10),
 		"color":       strconv.FormatInt(color, 10),
 		"messageType": "colorPixel",
@@ -101,16 +98,14 @@ func revertPixelPlacedEvent(event IndexerEvent) {
 	pos := uint(position) * core.ArtPeaceBackend.CanvasConfig.ColorsBitWidth
 
 	ctx := context.Background()
-	roundNumber := core.ArtPeaceBackend.CanvasConfig.Round
-	canvasKey := fmt.Sprintf("canvas-%s", roundNumber)
-	err = core.ArtPeaceBackend.Databases.Redis.BitField(ctx, canvasKey, "SET", bitfieldType, pos, oldColor).Err()
+	err = core.ArtPeaceBackend.Databases.Redis.BitField(ctx, "canvas", "SET", bitfieldType, pos, oldColor).Err()
 	if err != nil {
 		PrintIndexerError("revertPixelPlacedEvent", "Error resetting pixel in redis", address, posHex)
 		return
 	}
 
 	// Send message to all connected clients
-	var message = map[string]string{
+	var message = map[string]string {
 		"position":    strconv.FormatInt(position, 10),
 		"color":       strconv.Itoa(*oldColor),
 		"messageType": "colorPixel",

@@ -59,7 +59,7 @@ services:
       dockerfile: backend/Dockerfile.websocket
       context: .
     ports:
-      - 8083:8083
+      - 8082:8082
     links:
       - consumer
     restart: always

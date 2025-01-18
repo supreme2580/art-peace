@@ -37,12 +37,10 @@ import ModalPanel from './ui/ModalPanel.js';
 import Hamburger from './resources/icons/Hamburger.png';
 
 function App() {
-  const [worldsMode, setWorldsMode] = useState(devnetMode);
-  const [homeCounter, setHomeCounter] = useState(0);
+  const worldsMode = devnetMode;
   const [openedWorldId, setOpenedWorldId] = useState(worldsMode ? 0 : null);
   const [activeWorld, setActiveWorld] = useState(null);
   const [surroundingWorlds, setSurroundingWorlds] = useState([]);
-  const [username, setUsername] = useState('');
 
   // Page management
   const [isHome, setIsHome] = useState(true);
@@ -72,10 +70,6 @@ function App() {
         }
       } else {
         setIsHome(true);
-        if (!worldsMode) {
-          setOpenedWorldId(null);
-          return;
-        }
         try {
           const response = await fetchWrapper('get-world?worldId=0');
           if (response.data) {
@@ -87,9 +81,6 @@ function App() {
         }
       }
 
-      if (!worldsMode) {
-        return;
-      }
       // Always fetch surrounding worlds
       const surroundingResponse = await fetchWrapper('get-home-worlds');
       if (surroundingResponse.data) {
@@ -115,7 +106,7 @@ function App() {
     };
 
     getWorldId();
-  }, [location.pathname, worldsMode]);
+  }, [location.pathname]);
 
   useEffect(() => {
     setOverlayTemplate(null);
@@ -124,35 +115,22 @@ function App() {
 
   // Window management
   usePreventZoom();
-  const defaultWorldsTabs = ['Canvas', 'Worlds', 'Stencils', 'Account'];
-  const defaultTabs = [];
-  // TODO: Add features back
   /*
-  [
+  const tabs = [
     'Canvas',
     'Factions',
     'NFTs',
     'Quests',
     'Vote',
+    'Worlds',
     'Account'
   ];
+  //  : ['Canvas', 'Factions', 'NFTs', 'Quests', 'Vote', 'Account'];
   */
-  const [tabs, setTabs] = useState(
-    worldsMode ? defaultWorldsTabs : defaultTabs
-  );
-  const [activeTab, setActiveTab] = useState(
-    worldsMode ? defaultWorldsTabs[0] : defaultTabs[0]
-  );
+  // TODO: Add features back
+  const tabs = devnetMode ? ['Canvas', 'Worlds', 'Stencils', 'Account'] : [];
+  const [activeTab, setActiveTab] = useState(tabs[0]);
   useLockScroll(activeTab === 'Canvas');
-  useEffect(() => {
-    if (worldsMode) {
-      setTabs(defaultWorldsTabs);
-      setActiveTab(defaultWorldsTabs[0]);
-    } else {
-      setTabs(defaultTabs);
-      setActiveTab(defaultTabs[0]);
-    }
-  }, [worldsMode]);
 
   const isDesktopOrLaptop = useMediaQuery({
     query: '(min-width: 1224px)'
@@ -240,7 +218,6 @@ function App() {
     );
     const multiCanvasContract = new Contract(
       multi_canvas_abi,
-      // '0x03ce937f91fa0c88a4023f582c729935a5366385091166a763e53281e45ac410',
       process.env.REACT_APP_CANVAS_FACTORY_CONTRACT_ADDRESS,
       account
     );
@@ -721,46 +698,6 @@ function App() {
     setExtraPixelsData([...extraPixelsData, ...pixels]);
   };
 
-  /* global BigInt */
-  const placeWorldPixelCall = async (worldId, positions, colors, now) => {
-    if (devnetMode) return;
-    if (!address || !multiCanvasContract || !account) return;
-    if (positions.length !== colors.length) {
-      console.error('Positions and colors length mismatch');
-      return;
-    }
-    if (positions.length === 0) {
-      console.error('No pixels to place');
-      return;
-    }
-    if (positions.length > 1) {
-      console.error('Only one pixel placement supported');
-      return;
-    }
-    const placeWorldPixelCallData = multiCanvasContract.populate(
-      'place_pixel',
-      {
-        canvas_id: worldId,
-        pos: positions[0],
-        color: colors[0],
-        now: now
-      }
-    );
-    const { suggestedMaxFee } = await estimateInvokeFee({
-      contractAddress: multiCanvasContract.address,
-      entrypoint: 'place_pixel',
-      calldata: placeWorldPixelCallData.calldata
-    });
-    const maxFee = (suggestedMaxFee * BigInt(15)) / BigInt(10);
-    const result = await multiCanvasContract.place_pixel(
-      placeWorldPixelCallData.calldata,
-      {
-        maxFee
-      }
-    );
-    console.log(result);
-  };
-
   const extraPixelPlaceCall = async (positions, colors, now) => {
     if (devnetMode) return;
     if (!address || !artPeaceContract || !account) return;
@@ -778,6 +715,7 @@ function App() {
       entrypoint: 'place_extra_pixels',
       calldata: placeExtraPixelsCallData.calldata
     });
+    /* global BigInt */
     const maxFee = (suggestedMaxFee * BigInt(15)) / BigInt(10);
     const result = await artPeaceContract.place_extra_pixels(
       placeExtraPixelsCallData.calldata,
@@ -846,20 +784,11 @@ function App() {
   const submit = async () => {
     let timestamp = Math.floor(Date.now() / 1000);
     if (!devnetMode) {
-      if (worldsMode) {
-        await placeWorldPixelCall(
-          openedWorldId,
-          extraPixelsData.map((pixel) => pixel.x + pixel.y * width),
-          extraPixelsData.map((pixel) => pixel.colorId),
-          timestamp
-        );
-      } else {
-        await extraPixelPlaceCall(
-          extraPixelsData.map((pixel) => pixel.x + pixel.y * width),
-          extraPixelsData.map((pixel) => pixel.colorId),
-          timestamp
-        );
-      }
+      await extraPixelPlaceCall(
+        extraPixelsData.map((pixel) => pixel.x + pixel.y * width),
+        extraPixelsData.map((pixel) => pixel.colorId),
+        timestamp
+      );
     } else {
       if (worldsMode) {
         const firstPixel = extraPixelsData[0];
@@ -1370,7 +1299,6 @@ function App() {
           colorPixel={colorPixel}
           worldsMode={worldsMode}
           openedWorldId={openedWorldId}
-          placeWorldPixelCall={placeWorldPixelCall}
           activeWorld={activeWorld}
           width={width}
           height={height}
@@ -1436,16 +1364,8 @@ function App() {
           <div
             className='App__logo'
             onClick={() => {
-              let newCounter = homeCounter + 1;
-              setHomeCounter(newCounter);
-              console.log('Home counter:', newCounter);
-              if (homeCounter === 2) {
-                setWorldsMode(true);
-                setOpenedWorldId(0);
-                console.log('Worlds mode activated');
-              }
               setActiveTab(tabs[0]);
-              //TODO: window.location.pathname = '/';
+              window.location.pathname = '/';
             }}
           >
             <img
@@ -1583,8 +1503,6 @@ function App() {
             width={width}
             height={height}
             isDefending={isDefending}
-            username={username}
-            setUsername={setUsername}
           />
         </div>
         <div className='App__footer'>
