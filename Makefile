@@ -31,7 +31,11 @@ docker-build:
 	docker build . -f backend/Dockerfile.consumer.prod -t "brandonjroberts/art-peace-consumer:$(APP_VERSION)-$(COMMIT_SHA)"
 	@echo "Building websocket..."
 	docker build . -f backend/Dockerfile.websocket.prod -t "brandonjroberts/art-peace-websocket:$(APP_VERSION)-$(COMMIT_SHA)"
+<<<<<<< HEAD
 	@echo "Building indexer main..."	
+=======
+	@echo "Building indexer..."	
+>>>>>>> ec86549 (Websocket deployment)
 	docker build . -f indexer/Dockerfile.prod -t "brandonjroberts/art-peace-indexer:$(APP_VERSION)-$(COMMIT_SHA)"
 	@echo "Building indexer worlds..."	
 	docker build . -f indexer/Dockerfile.worlds.prod -t "brandonjroberts/art-peace-worlds-indexer:$(APP_VERSION)-$(COMMIT_SHA)"
